@@ -21,4 +21,6 @@ function multiPointMap(value, inputPoints, outputPoints) {
     return outputPoints[outputPoints.length - 1]; // Fallback (should not occur)
 }
 
+
+
 export { map, multiPointMap };
