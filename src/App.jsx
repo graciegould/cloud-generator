@@ -7,9 +7,14 @@ function App() {
   const [noiseScale, setNoiseScale] = useState(0.05);
   const [xSpeed, setXSpeed] = useState(0.00);
   const [ySpeed, setYSpeed] = useState(0.00);
-  const [variationSpeed, setVariationSpeed] = useState(0.00);
-  const [thickness, setThickness] = useState(50);
-  const [cloudCoverage, setCloudCoverage] = useState(50);
+  const [variationSpeed, setVariationSpeed] = useState(30);
+  const [thickness, setThickness] = useState(100);
+  const [relativeHumidity, setRelativeHumidity] = useState(40);
+  const [min, setMin] = useState(0);
+  const [max, setMax] = useState(1);
+  const [windDirection, setWindDirection] = useState(0);
+  const [windSpeed, setWindSpeed] = useState(10);
+
   return (
     <div className="app">
       <Clouds
@@ -19,7 +24,11 @@ function App() {
         noiseScale={noiseScale}
         variationSpeed={variationSpeed}
         thickness={thickness}
-        cloudCoverage={cloudCoverage}
+        relativeHumidity={relativeHumidity}
+        min={min}
+        max={max}
+        windDirection={windDirection}
+        windSpeed={windSpeed}
       />
       <div className="overlay">
         <div className="overlay-controls">
@@ -45,7 +54,7 @@ function App() {
             </label>
             <input
               type="range"
-              min={0.005}
+              min={0.01}
               max={0.1}
               step={0.001}
               id="range2"
@@ -83,13 +92,13 @@ function App() {
           </div>
           <div className="input-item">
             <label htmlFor="range5">
-              variationSpeed: {variationSpeed.toFixed(3)}{' '}
+              variationSpeed: {variationSpeed}{' '}
             </label>
             <input
               type="range"
-              min={0.0001}
-              max={0.1}
-              step={0.0001}
+              min={0}
+              max={100}
+              step={1}
               id="range4"
               value={variationSpeed}
               onChange={(e) => setVariationSpeed(parseFloat(e.target.value))}
@@ -110,17 +119,73 @@ function App() {
             />
           </div>
           <div className="input-item">
-            <label htmlFor="range7">
-              cloud coverage: {cloudCoverage}{' '}
+            <label htmlFor="range8">
+              Relative Humidity: {relativeHumidity}%{' '}
             </label>
             <input
               type="range"
               min={0}
-              max={100}
+              max={120}
               step={1}
-              id="range7"
-              value={cloudCoverage}
-              onChange={(e) => setCloudCoverage(parseInt(e.target.value))}
+              id="range8"
+              value={relativeHumidity}
+              onChange={(e) => setRelativeHumidity(parseInt(e.target.value))}
+            />
+          </div>
+          <div className="input-item">
+            <label htmlFor="range9">
+              Min: {min.toFixed(2)}{' '}
+            </label>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.01}
+              id="range9"
+              value={min}
+              onChange={(e) => setMin(parseFloat(e.target.value))}
+            />
+          </div>
+          <div className="input-item">
+            <label htmlFor="range10">
+              Max: {max.toFixed(2)}{' '}
+            </label>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.01}
+              id="range10"
+              value={max}
+              onChange={(e) => setMax(parseFloat(e.target.value))}
+            />
+          </div>
+          <div className="input-item">
+            <label htmlFor="range11">
+              Wind Direction: {windDirection}°{' '}
+            </label>
+            <input
+              type="range"
+              min={0}
+              max={360}
+              step={1}
+              id="range11"
+              value={windDirection}
+              onChange={(e) => setWindDirection(parseInt(e.target.value))}
+            />
+          </div>
+          <div className="input-item">
+            <label htmlFor="range12">
+              Wind Speed: {windSpeed.toFixed(2)}{' '}
+            </label>
+            <input
+              type="range"
+              min={0}
+              max={50}
+              step={0.1}
+              id="range12"
+              value={windSpeed}
+              onChange={(e) => setWindSpeed(parseFloat(e.target.value))}
             />
           </div>
         </div>

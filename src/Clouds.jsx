@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import p5 from 'p5';
-import { use } from 'react';
+import { map, multiPointMap } from './utils.js';
 function Clouds({
   pixelSize,
   noiseScale,
@@ -8,12 +8,26 @@ function Clouds({
   ySpeed,
   variationSpeed,
   thickness,
-  cloudCoverage,
+  relativeHumidity,
+  min,
+  max,
+  windDirection,
+  windSpeed
 }) {
+  const [p5Instance, setP5Instance] = useState(null);
   const sketchRef = useRef();
   const thicknessRef = useRef(thickness / 100);
-  const cloudCoverageRef = useRef((cloudCoverage / 1000));
   const noiseScaleRef = useRef(noiseScale);
+  const variationSpeedRef = useRef((variationSpeed / 1000) / 2);
+  const pixelSizeRef = useRef(pixelSize);
+  const relativeHumidityRef = useRef(relativeHumidity);
+  const windAngleRef = useRef(windDirection * (Math.PI / 180));
+  const windSpeedRef = useRef(windSpeed);
+  const timeOffsetRef = useRef(0);
+  const xSpeedRef = useRef(xSpeed);
+  const ySpeedRef = useRef(ySpeed);
+  const minRef = useRef(0);
+  const maxRef = useRef(1);
 
   useEffect(() => {
     const sketch = (p) => {
@@ -22,8 +36,15 @@ function Clouds({
       let alphaGrid = [];
       let noiseOffsetX = xSpeed;
       let noiseOffsetY = ySpeed;
-      let timeOffset = 0;
-
+      const initializeAlphaGrid = () => {
+        alphaGrid = Array.from({ length: cols }, (_, col) =>
+          Array.from({ length: rows }, (_, row) => {
+            return {
+              alpha: 0
+            }
+          }),
+        );
+      };
       p.setup = () => {
         p.createCanvas(
           window.screen.width,
@@ -35,43 +56,28 @@ function Clouds({
         p.background(171, 205, 255);
         drawGrid();
         updateClouds();
-        // p.noLoop();
       };
 
       p.draw = () => {
         p.background(171, 205, 255);
         drawGrid();
         updateClouds();
-        noiseOffsetX += xSpeed;
-        noiseOffsetY += ySpeed;
-        timeOffset += 0.01;
+        noiseOffsetX += xSpeedRef.current;
+        noiseOffsetY += ySpeedRef.current;
+        timeOffsetRef.current += variationSpeedRef.current;
       };
 
-      const initializeAlphaGrid = () => {
-        alphaGrid = Array.from({ length: cols }, (_, col) =>
-          Array.from({ length: rows }, (_, row) => {
-            const noiseValue = p.noise(
-              col * noiseScaleRef.current + noiseOffsetX,
-              row * noiseScaleRef.current + noiseOffsetY,
-              timeOffset,
-            );
-            return {
-              alpha: p.map(noiseValue, 0.35, 0.65, 0, 255, true),
-            }
-          }),
-        );
-      };
 
       const drawGrid = () => {
         for (let col = 0; col < cols; col++) {
           for (let row = 0; row < rows; row++) {
             const alpha = alphaGrid[col][row].alpha;
-            p.stroke(0, 0, 0, 10);
+            // p.stroke(0, 0, 0, 10);
             p.fill(255, 255, 255, alpha);
             p.rect(
-              col * pixelSize, 
-              row * pixelSize, 
-              pixelSize, 
+              col * pixelSize,
+              row * pixelSize,
+              pixelSize,
               pixelSize
             );
           }
@@ -79,44 +85,86 @@ function Clouds({
       };
 
       const updateClouds = () => {
-        p.noiseDetail(6, thicknessRef.current);
         for (let col = 0; col < cols; col++) {
           for (let row = 0; row < rows; row++) {
-            const noiseValue = p.noise(
+            let noiseValue = p.noise(
               col * noiseScaleRef.current + noiseOffsetX,
               row * noiseScaleRef.current + noiseOffsetY,
-              timeOffset,
+              timeOffsetRef.current,
             );
-            // 
-            // low min = low density & high coverage
-            let min = 0.10;
-            let max = 0.75;
+            if (relativeHumidityRef.current < 50) {
+                noiseValue = Math.pow(noiseValue, 1.2); // Sharpen for wispy cirrus
+            } else if (relativeHumidityRef.current > 90) {
+                noiseValue = Math.pow(noiseValue, 0.8); // Soften for thick clouds
+            }
             alphaGrid[col][row].alpha = p.map(
               noiseValue,
-              min,
-              max,
+              minRef.current,
+              maxRef.current,
               0,
-              255,
+              255 * thicknessRef.current,
               true
             );
           }
         }
       };
-      return {
-        cols
-      }
     };
 
-    const p5Instance = new p5(sketch);
+    setP5Instance(new p5(sketch));
     return () => {
-      p5Instance.remove();
+      p5Instance?.remove();
     };
   }, []);
 
   useEffect(() => {
+    relativeHumidityRef.current = relativeHumidity;
+    minRef.current = multiPointMap(
+      relativeHumidityRef.current,
+      [0, 30, 50, 70, 90, 100, 110, 120],  // Humidity levels
+      [0.95, 0.75, 0.6, 0.45, 0.2, 0.1, 0.05, 0.0] // Lowered minRef to allow softer falloff
+    );
+
+    maxRef.current = multiPointMap(
+      relativeHumidityRef.current,
+      [0, 30, 50, 70, 90, 100, 110, 120],  // Humidity levels
+      [1.0, 0.92, 0.87, 0.65, 0.5, 0.35, 0.2, 0.1] // Slightly increased at low humidity for smoother blending
+    );
+
+    thicknessRef.current = multiPointMap(
+      relativeHumidityRef.current,
+      [0, 30, 50, 70, 90, 100, 110, 120],  // Humidity levels
+      [0.0, 0.12, 0.35, 0.65, 0.85, 0.97, 1.0, 1.0] // Slightly increased mid-high humidity blending
+    );
+
+    noiseScaleRef.current = multiPointMap(
+      relativeHumidityRef.current,
+      [0, 30, 50, 70, 90, 100, 110, 120],  // Humidity levels
+      [0.1, 0.09, 0.07, 0.05, 0.07, 0.04, 0.03, 0.0] // Slightly increased at 30-50% for finer wispy details
+    );
+    pixelSizeRef.current = multiPointMap(
+      relativeHumidityRef.current,
+      [0, 30, 50, 70, 90, 100, 110, 120],
+      [2, 3, 4, 5, 6, 7, 8, 10] // Larger pixel size for denser clouds
+    );
+
+    timeOffsetRef.current += 1;
+
+  }, [relativeHumidity])
+
+  useEffect(() => {
+    windAngleRef.current = windDirection * (Math.PI / 180);
+    xSpeedRef.current = Math.cos(windAngleRef.current) * windSpeedRef.current * 0.01; // Scale for smooth motion
+    ySpeedRef.current = Math.sin(windAngleRef.current) * windSpeedRef.current * 0.01;
+  }, [windDirection, windSpeed])
+
+  useEffect(() => {
+    minRef.current = min;
+    maxRef.current = max;
+    noiseScaleRef.current = noiseScale;
     thicknessRef.current = thickness / 100;
-    cloudCoverageRef.current = (cloudCoverage / 100) * 10;
-  }, [thickness, cloudCoverage]);
+    timeOffsetRef.current += 1;
+  }, [min, max, noiseScale, thickness]);
+
   return (
     <div className='clouds-container'>
       <div
