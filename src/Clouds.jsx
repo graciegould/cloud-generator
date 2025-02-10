@@ -393,48 +393,48 @@ const Clouds = ({ conditions }) => {
   }, []);
 
   const handleHumdity = (cloudType) => {
-    cloudPropsRef.current.thickness = map(
+    cloudPropsRef.current.thickness = parseFloat(map(
       conditions.relativeHumidity,
       0,
       120,
       cloudTypeRanges[cloudType].min.thickness,
       cloudTypeRanges[cloudType].max.thickness
-    );
-    cloudPropsRef.current.noiseScale = map(
+    ).toFixed(3));
+    cloudPropsRef.current.noiseScale = parseFloat(map(
       conditions.relativeHumidity,
       0,
       120,
       cloudTypeRanges[cloudType].min.noiseScale,
       cloudTypeRanges[cloudType].max.noiseScale
-    );
-    cloudPropsRef.current.noiseRange.min = map(
+    ).toFixed(3));
+    cloudPropsRef.current.noiseRange.min = parseFloat(map(
       conditions.relativeHumidity,
       0,
       120,
       cloudTypeRanges[cloudType].min.noiseRange.min,
       cloudTypeRanges[cloudType].max.noiseRange.min
-    );
-    cloudPropsRef.current.noiseRange.max = map(
+    ).toFixed(3));
+    cloudPropsRef.current.noiseRange.max = parseFloat(map(
       conditions.relativeHumidity,
       0,
       120,
       cloudTypeRanges[cloudType].min.noiseRange.max,
       cloudTypeRanges[cloudType].max.noiseRange.max
-    );
-    cloudPropsRef.current.shape.width = map(
+    ).toFixed(3));
+    cloudPropsRef.current.shape.width = parseFloat(map(
       conditions.windSpeed,
       0,
       50,
       cloudTypeRanges[cloudType].min.shape.width,
       cloudTypeRanges[cloudType].max.shape.width
-    );
-    cloudPropsRef.current.shape.height = map(
+    ).toFixed(3));
+    cloudPropsRef.current.shape.height = parseFloat(map(
       conditions.windSpeed,
       0,
       50,
       cloudTypeRanges[cloudType].min.shape.height,
       cloudTypeRanges[cloudType].max.shape.height
-    );
+    ).toFixed(3));
   }
 
   useEffect(() => {
