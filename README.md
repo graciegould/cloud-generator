@@ -4,7 +4,7 @@
 
 This application generates cloud-like formations using Perlin noise with p5.js. Users can modify parameters like wind speed, humidity, altitude, and temperature to see real-time changes in the cloud simulation. 
 
-![demo.png](demo.png)
+![demo.png](./demo.png)
 
 ## Installation
 
