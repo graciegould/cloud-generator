@@ -10,7 +10,7 @@ import {
   calculateAltitude,
   cloudTypeConditions
 } from './calculations';
-export const App = () => {
+const App = () => {
   const [conditions, setConditions] = useState({
     windDirection: 45, 
     windSpeed: 10, 
@@ -166,5 +166,6 @@ const selectCloudType = (cloudType) => {
     </div>
   );
 };
+
 
 export default App;

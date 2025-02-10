@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import p5 from 'p5';
 import { map } from './utils.js';
-export const Clouds = ({ conditions }) => {
+const Clouds = ({ conditions }) => {
   const sketchRef = useRef();
   const pixelSize = 8;
   const [cloudProps, setCloudProps] = useState({
@@ -517,5 +517,7 @@ export const Clouds = ({ conditions }) => {
       />
     </div>
   );
-
 };
+
+
+export default Clouds;
