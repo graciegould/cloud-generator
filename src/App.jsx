@@ -1,197 +1,170 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import './scss/App.scss';
 import Clouds from './Clouds';
+import {
+  calculateDewPointFromHumidity, 
+  calculateRelativeHumidity, 
+  calculateAirTempFromAltitude, 
+  determineCloudType, 
+  calculateDewPointFromAltitude, 
+  calculateAltitude,
+  cloudTypeConditions
+} from './calculations';
+export const App = () => {
+  const [conditions, setConditions] = useState({
+    windDirection: 45, 
+    windSpeed: 10, 
+    airTemp: cloudTypeConditions.Cumulonimbus.max.airTemp,
+    dewPoint: calculateDewPointFromHumidity(cloudTypeConditions.Cumulonimbus.max.airTemp, cloudTypeConditions.Cumulonimbus.max.relativeHumidity),
+    airPressure: cloudTypeConditions.Cumulonimbus.max.airPressure,
+    relativeHumidity: cloudTypeConditions.Cumulonimbus.max.relativeHumidity,
+    altitude: cloudTypeConditions.Cumulonimbus.max.altitude,
+    cloudType: "Cumulonimbus"
+  });
+  const conditionInputs = {
+    relativeHumidity: {
+      label: 'Relative Humidity (RH)',
+      min: 0,
+      max: 120,
+      step: 1,
+      unit: '%',
+      type: 'int'
+    },
+    windDirection: {
+      label: 'Wind Direction',
+      min: 0,
+      max: 360,
+      step: 1,
+      unit: '°',
+      type: 'int'
+    },
+    windSpeed: {
+      label: 'Wind Speed',
+      min: 0,
+      max: 50,
+      step: 0.1,
+      unit: 'm/s',
+      type: 'float'
+    },
+    airTemp: {
+      label: 'Air Temperature',
+      min: -50,
+      max: 50,
+      step: 1,
+      unit: '°C',
+      type: 'int'
+    },
+    airPressure: {
+      label: 'Air Pressure',
+      min: 0, 
+      max: 1050,
+      step: 1,
+      unit: 'hPa',
+      type: 'int'
+    },
+    dewPoint: {
+      label: 'Dew Point',
+      min: -20,
+      max: 50,
+      step: 1,
+      unit: '°C',
+    },
+    altitude: {
+      label: 'Altitude',
+      min: 0,
+      max: 20000,
+      step: 10,
+      unit: 'm'
+    }
+  }
+  const updateCondition = (e) => {
+    const key = e.target.name;
+    setConditions((prev) => {
+        let _conditions = {
+            ...prev,
+            [key]: conditionInputs[key].type === 'int' ? 
+                parseInt(e.target.value) : 
+                parseFloat(e.target.value)
+        };
+        if (key === 'relativeHumidity') {
+            _conditions.dewPoint = calculateDewPointFromHumidity(_conditions.airTemp, _conditions.relativeHumidity);
+        }
+        
+        if (key === 'airTemp') {
+            _conditions.dewPoint = calculateDewPointFromHumidity(_conditions.airTemp, _conditions.relativeHumidity);
+        }
 
-function App() {
-  const [pixelSize, setPixelSize] = useState(8);
-  const [noiseScale, setNoiseScale] = useState(0.05);
-  const [xSpeed, setXSpeed] = useState(0.00);
-  const [ySpeed, setYSpeed] = useState(0.00);
-  const [variationSpeed, setVariationSpeed] = useState(30);
-  const [thickness, setThickness] = useState(100);
-  const [relativeHumidity, setRelativeHumidity] = useState(40);
-  const [min, setMin] = useState(0);
-  const [max, setMax] = useState(1);
-  const [windDirection, setWindDirection] = useState(0);
-  const [windSpeed, setWindSpeed] = useState(10);
+        if (key === 'dewPoint') {
+            _conditions.relativeHumidity = calculateRelativeHumidity(_conditions.airTemp, _conditions.dewPoint);
+        }
+
+        if (key === 'airPressure') {
+            _conditions.altitude = calculateAltitude(_conditions.airPressure);
+        }
+
+        if (key === 'altitude') {
+            _conditions.airTemp = calculateAirTempFromAltitude(_conditions.altitude, 15, 0); 
+            _conditions.dewPoint = calculateDewPointFromAltitude(_conditions.altitude, 10, 0);
+        }
+
+        _conditions['cloudType'] = determineCloudType(_conditions);
+        return _conditions;   
+    });
+}
+
+const selectCloudType = (cloudType) => {
+  console.log(cloudType)
+  let _conditions = {
+    ...conditions,
+    ...cloudTypeConditions[cloudType].max
+  };
+  _conditions['cloudType'] = determineCloudType(_conditions);
+  setConditions(_conditions);
+}
 
   return (
     <div className="app">
-      <Clouds
-        pixelSize={pixelSize}
-        xSpeed={xSpeed}
-        ySpeed={ySpeed}
-        noiseScale={noiseScale}
-        variationSpeed={variationSpeed}
-        thickness={thickness}
-        relativeHumidity={relativeHumidity}
-        min={min}
-        max={max}
-        windDirection={windDirection}
-        windSpeed={windSpeed}
-      />
+      <Clouds conditions={conditions}/>
       <div className="overlay">
         <div className="overlay-controls">
-          <div className="input-item">
-            <label htmlFor="range1">
-              Pixel Size: {pixelSize}{' '}
-            </label>
-            <input
-              type="number"
-              min={4}
-              max={50}
-              step={1}
-              id="range1"
-              value={pixelSize}
-              onChange={(e) => {
-                setPixelSize(parseInt(e.target.value));
-              }}
-            />
+          <div className='cloud-type'>
+          <h3>Cloud Type: {conditions.cloudType}</h3>
           </div>
-          <div className="input-item">
-            <label htmlFor="range2">
-              Noise Scale: {noiseScale.toFixed(3)}{' '}
-            </label>
-            <input
-              type="range"
-              min={0.01}
-              max={0.1}
-              step={0.001}
-              id="range2"
-              value={noiseScale}
-              onChange={(e) => setNoiseScale(parseFloat(e.target.value))}
-            />
-          </div>
-          <div className="input-item">
-            <label htmlFor="range3">
-              X Speed: {xSpeed.toFixed(3)}{' '}
-            </label>
-            <input
-              type="range"
-              min={0.0001}
-              max={0.1}
-              step={0.0001}
-              id="range3"
-              value={xSpeed}
-              onChange={(e) => setXSpeed(parseFloat(e.target.value))}
-            />
-          </div>
-          <div className="input-item">
-            <label htmlFor="range4">
-              Y Speed: {ySpeed.toFixed(3)}{' '}
-            </label>
-            <input
-              type="range"
-              min={0.0001}
-              max={0.1}
-              step={0.0001}
-              id="range4"
-              value={ySpeed}
-              onChange={(e) => setYSpeed(parseFloat(e.target.value))}
-            />
-          </div>
-          <div className="input-item">
-            <label htmlFor="range5">
-              variationSpeed: {variationSpeed}{' '}
-            </label>
-            <input
-              type="range"
-              min={0}
-              max={100}
-              step={1}
-              id="range4"
-              value={variationSpeed}
-              onChange={(e) => setVariationSpeed(parseFloat(e.target.value))}
-            />
-          </div>
-          <div className="input-item">
-            <label htmlFor="range6">
-              cloudThickness: {thickness}{' '}
-            </label>
-            <input
-              type="range"
-              min={0}
-              max={100}
-              step={1}
-              id="range6"
-              value={thickness}
-              onChange={(e) => setThickness(parseInt(e.target.value))}
-            />
-          </div>
-          <div className="input-item">
-            <label htmlFor="range8">
-              Relative Humidity: {relativeHumidity}%{' '}
-            </label>
-            <input
-              type="range"
-              min={0}
-              max={120}
-              step={1}
-              id="range8"
-              value={relativeHumidity}
-              onChange={(e) => setRelativeHumidity(parseInt(e.target.value))}
-            />
-          </div>
-          <div className="input-item">
-            <label htmlFor="range9">
-              Min: {min.toFixed(2)}{' '}
-            </label>
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.01}
-              id="range9"
-              value={min}
-              onChange={(e) => setMin(parseFloat(e.target.value))}
-            />
-          </div>
-          <div className="input-item">
-            <label htmlFor="range10">
-              Max: {max.toFixed(2)}{' '}
-            </label>
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.01}
-              id="range10"
-              value={max}
-              onChange={(e) => setMax(parseFloat(e.target.value))}
-            />
-          </div>
-          <div className="input-item">
-            <label htmlFor="range11">
-              Wind Direction: {windDirection}°{' '}
-            </label>
-            <input
-              type="range"
-              min={0}
-              max={360}
-              step={1}
-              id="range11"
-              value={windDirection}
-              onChange={(e) => setWindDirection(parseInt(e.target.value))}
-            />
-          </div>
-          <div className="input-item">
-            <label htmlFor="range12">
-              Wind Speed: {windSpeed.toFixed(2)}{' '}
-            </label>
-            <input
-              type="range"
-              min={0}
-              max={50}
-              step={0.1}
-              id="range12"
-              value={windSpeed}
-              onChange={(e) => setWindSpeed(parseFloat(e.target.value))}
-            />
+          {Object.keys(conditionInputs).map((key) => {
+            const input = conditionInputs[key];
+            return (
+              <div className="input-item" key={key}>
+                <label htmlFor={`range${key}`}>
+                  {input.label}: {conditions[key]}{input.unit}{' '}
+                </label>
+                <input
+                  type="range"
+                  min={input.min}
+                  max={input.max}
+                  step={input.step}
+                  id={`range${key}`}
+                  value={conditions[key]}
+                  name={key}
+                  onChange={(e) => updateCondition(e)}
+                />
+              </div>
+            );
+          })}
+          <div className='cloud-type-selections'>
+            {Object.keys(cloudTypeConditions).map((key) => {
+              return (
+                <div key={"cloudType-selection-"+key} className="cloud-type-selection">
+                  <button onClick={() => selectCloudType(key)}>
+                    {key}
+                  </button>
+                </div>
+              )
+            })}
           </div>
         </div>
       </div>
     </div>
   );
-}
+};
 
 export default App;
